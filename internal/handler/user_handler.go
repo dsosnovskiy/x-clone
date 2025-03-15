@@ -1,0 +1,54 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+	"x-clone/internal/model"
+	"x-clone/internal/service"
+)
+
+type UserHandler struct {
+	userService *service.UserService
+}
+
+func NewUserHandler(userService *service.UserService) *UserHandler {
+	return &UserHandler{userService: userService}
+}
+
+func (h *UserHandler) CreateUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var user model.User
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		if err := h.userService.CreateUser(&user); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(user)
+	}
+}
+
+func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := r.Header.Get("Username")
+		if username == "" {
+			http.Error(w, "missing Username header", http.StatusBadRequest)
+			return
+		}
+
+		user, err := h.userService.FindUserByUsername(username)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(user)
+	}
+}
