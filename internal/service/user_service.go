@@ -23,7 +23,7 @@ func (s *UserService) CreateUser(user *model.User) error {
 
 	user.Password = hashedPassword
 
-	if user.Username == "" || user.Password == "" || user.FirstName == "" || user.LastName == "" || user.Birthday == "" {
+	if user.Username == "" || user.Password == "" || user.FirstName == "" || user.LastName == "" {
 		return fmt.Errorf("user data cannot be empty")
 	}
 

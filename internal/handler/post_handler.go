@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"x-clone/internal/model"
 	"x-clone/internal/service"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type PostHandler struct {
@@ -31,7 +33,7 @@ func (h *PostHandler) CreatePost() http.HandlerFunc {
 		}
 
 		if err := h.postService.CreatePost(&post, username); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -43,11 +45,7 @@ func (h *PostHandler) CreatePost() http.HandlerFunc {
 
 func (h *PostHandler) GetUserPosts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := r.Header.Get("Username")
-		if username == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
-			return
-		}
+		username := chi.URLParam(r, "username")
 
 		posts, err := h.postService.GetUserPosts(username)
 		if err != nil {
@@ -56,6 +54,7 @@ func (h *PostHandler) GetUserPosts() http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(posts)
 	}
 }

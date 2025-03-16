@@ -36,7 +36,11 @@ func main() {
 	postHandler := handler.NewPostHandler(postService, userService)
 	log.Debug("Successfully initialized the handler")
 
-	r := router.New(postHandler, userHandler)
+	handlers := &router.Handlers{
+		PostHandler: postHandler,
+		UserHandler: userHandler,
+	}
+	r := router.New(handlers)
 	log.Debug("Successfully initialized the router")
 
 	log.Infof("The server is running on address: %s", cfg.Server.Address)

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"x-clone/internal/model"
 	"x-clone/internal/service"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type UserHandler struct {
@@ -36,11 +38,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 
 func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := r.Header.Get("Username")
-		if username == "" {
-			http.Error(w, "missing Username header", http.StatusBadRequest)
-			return
-		}
+		username := chi.URLParam(r, "username")
 
 		user, err := h.userService.FindUserByUsername(username)
 		if err != nil {
@@ -49,6 +47,7 @@ func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
 	}
 }
