@@ -23,10 +23,6 @@ func (s *UserService) CreateUser(user *model.User) error {
 
 	user.Password = hashedPassword
 
-	if user.Username == "" || user.Password == "" || user.FirstName == "" || user.LastName == "" {
-		return fmt.Errorf("user data cannot be empty")
-	}
-
 	if err := s.userRepo.CreateUser(user); err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}

@@ -23,10 +23,6 @@ func (s *PostService) CreatePost(post *model.Post, username string) error {
 
 	post.UserID = user.UserID
 
-	if post.Content == "" {
-		return fmt.Errorf("post content cannot be empty")
-	}
-
 	if err := s.postRepo.CreatePost(post); err != nil {
 		return fmt.Errorf("failed to create post: %v", err)
 	}

@@ -25,14 +25,21 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			return
 		}
 
+		if err := user.Validate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		if err := h.userService.CreateUser(&user); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		userResponse := user.ToResponse()
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(user)
+		json.NewEncoder(w).Encode(userResponse)
 	}
 }
 
@@ -46,8 +53,10 @@ func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
 			return
 		}
 
+		userResponse := user.ToResponse()
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(user)
+		json.NewEncoder(w).Encode(userResponse)
 	}
 }

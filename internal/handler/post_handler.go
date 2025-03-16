@@ -32,6 +32,11 @@ func (h *PostHandler) CreatePost() http.HandlerFunc {
 			return
 		}
 
+		if err := post.Validate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		if err := h.postService.CreatePost(&post, username); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
