@@ -9,9 +9,9 @@ import (
 type User struct {
 	UserID    int       `json:"user_id" gorm:"primaryKey;autoIncrement"`
 	Username  string    `json:"username" gorm:"unique;not null" validate:"required,min=6,max=20"`
-	Password  string    `json:"password" gorm:"not null" validate:"required,min=8,max=32"`
-	FirstName string    `json:"first_name" gorm:"not null" validate:"required"`
-	LastName  string    `json:"last_name" gorm:"not null" validate:"required"`
+	Password  string    `json:"password" gorm:"not null" validate:"required,min=7,max=32"`
+	FirstName string    `json:"first_name" gorm:"not null" validate:"required,min=2,max=32"`
+	LastName  string    `json:"last_name" gorm:"not null" validate:"required,min=2,max=32"`
 	Birthday  *string   `json:"birthday" gorm:"default:null" validate:"omitempty,datetime=2006-01-02"`
 	Bio       *string   `json:"bio" gorm:"size:300;default:null" validate:"max=300"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
