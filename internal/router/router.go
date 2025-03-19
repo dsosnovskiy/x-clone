@@ -21,11 +21,11 @@ func New(handlers *Handlers) *chi.Mux {
 	// PUT /settings/profile // Обновить данные пользователя (по header)
 	r.Get("/{username}", handlers.UserHandler.FindUserByUsername()) // Информация о пользователе
 
-	r.Post("/compose/post", handlers.PostHandler.CreatePost())      // Создать пост в своём профиле (по header)
-	r.Get("/{username}/posts", handlers.PostHandler.GetUserPosts()) // Посты пользователя
-	// GET /{username}/posts/{post_id} // Конкретный пост пользователя
-	// PATCH /{username}/posts/{post_id} // Редактирование контента поста (по header)
-	// DELETE /{username}/posts/{post_id} // Удаление поста (по header)
+	r.Post("/compose/post", handlers.PostHandler.CreatePost())                           // Создать пост в своём профиле (по header)
+	r.Get("/{username}/posts", handlers.PostHandler.GetUserPosts())                      // Посты пользователя
+	r.Get("/{username}/posts/{post_id}", handlers.PostHandler.GetUserPostByID())         // Конкретный пост пользователя
+	r.Patch("/{username}/posts/{post_id}", handlers.PostHandler.UpdatePostContentByID()) // Редактирование контента поста (по header)
+	r.Delete("/{username}/posts/{post_id}", handlers.PostHandler.DeletePostByID())       // Удаление поста (по header)
 
 	// GET /feed // Лента новостей. Посты тех на кого подписан пользователь (по header)
 
