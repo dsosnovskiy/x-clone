@@ -35,10 +35,10 @@ func New(handlers *Handlers) *chi.Mux {
 	// POST /{username}/posts/{post_id}/like // Лайк на пост (1 раз) (по header)
 	// DELETE /{username}/posts/{post_id}/like // Удаление лайка с поста
 
-	// POST /{username}/follow // Подписаться на пользователя (1 раз) (по header)
-	// DELETE /{username}/follow // Отписаться (по header)
-	// GET /{username}/followers // Подписчики пользователя
-	// GET /{username}/following // На кого пользователь подписан
+	r.Post("/{username}/follow", handlers.UserHandler.FollowUser())           // Подписаться на пользователя (по header)
+	r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())  // Отписаться от пользователя (по header)
+	r.Get("/{username}/followers", handlers.UserHandler.GetFollowersByUser()) // Подписчики пользователя
+	r.Get("/{username}/following", handlers.UserHandler.GetFollowingByUser()) // На кого пользователь подписан
 
 	// GET /notifications // Уведомления пользователя (по header)
 
