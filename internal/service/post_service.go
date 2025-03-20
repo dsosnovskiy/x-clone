@@ -94,3 +94,33 @@ func (s *PostService) DeletePostByID(postID, userID int) error {
 	}
 	return nil
 }
+
+func (s *PostService) LikePost(userID, postID int) error {
+	postExists, err := s.postRepo.PostExists(postID)
+	if err != nil {
+		return err
+	}
+	if !postExists {
+		return fmt.Errorf("post not found")
+	}
+
+	if err := s.postRepo.LikePost(userID, postID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PostService) UnlikePost(userID, postID int) error {
+	postExists, err := s.postRepo.PostExists(postID)
+	if err != nil {
+		return err
+	}
+	if !postExists {
+		return fmt.Errorf("post not found")
+	}
+
+	if err := s.postRepo.UnlikePost(userID, postID); err != nil {
+		return err
+	}
+	return nil
+}

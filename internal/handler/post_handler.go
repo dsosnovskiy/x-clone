@@ -169,3 +169,93 @@ func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+func (h *PostHandler) LikePost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		usernameWhoLiked := r.Header.Get("Username")
+
+		if usernameWhoLiked == "" {
+			http.Error(w, "missing Username header", http.StatusUnauthorized)
+			return
+		}
+
+		usernameWhosePost := chi.URLParam(r, "username")
+
+		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
+		if err != nil {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+
+		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		userWhoLiked, err := h.userService.FindUserByUsername(usernameWhoLiked)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, int(postID))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		if err := h.postService.LikePost(userWhoLiked.UserID, post.PostID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successfully liked, post_id: " + chi.URLParam(r, "post_id")))
+	}
+}
+
+func (h *PostHandler) UnlikePost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		usernameWhoLiked := r.Header.Get("Username")
+
+		if usernameWhoLiked == "" {
+			http.Error(w, "missing Username header", http.StatusUnauthorized)
+			return
+		}
+
+		usernameWhosePost := chi.URLParam(r, "username")
+
+		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
+		if err != nil {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+
+		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		userWhoLiked, err := h.userService.FindUserByUsername(usernameWhoLiked)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, int(postID))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		if err := h.postService.UnlikePost(userWhoLiked.UserID, post.PostID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successfully unliked, post_id: " + chi.URLParam(r, "post_id")))
+	}
+}

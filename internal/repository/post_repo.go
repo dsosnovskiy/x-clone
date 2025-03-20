@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"x-clone/internal/model"
 
 	"gorm.io/gorm"
@@ -79,4 +80,61 @@ func (r *PostRepository) DeletePostByID(postID int) error {
 		return err
 	}
 	return nil
+}
+
+func (r *PostRepository) LikePost(userID, postID int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// IsLiking
+		var existingLike model.Like
+		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				// Continuing transaction...
+			} else {
+				return err
+			}
+		} else {
+			return fmt.Errorf("you've already liked this post")
+		}
+
+		// CreateLike
+		like := &model.Like{
+			UserID:      userID,
+			LikedPostID: postID,
+		}
+		if err := tx.Create(like).Error; err != nil {
+			return err
+		}
+
+		// IncrementLikes
+		if err := tx.Model(&model.Post{}).Where("post_id = ?", postID).Update("likes", gorm.Expr("likes + 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *PostRepository) UnlikePost(userID, postID int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// IsLiking
+		var existingLike model.Like
+		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("you already don't like this post")
+			}
+			return err
+		}
+
+		// DeleteLike
+		if err := tx.Delete(&existingLike).Error; err != nil {
+			return err
+		}
+
+		// DecrementLikes
+		if err := tx.Model(&model.Post{}).Where("post_id = ?", postID).Update("likes", gorm.Expr("likes - 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

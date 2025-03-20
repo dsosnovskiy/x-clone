@@ -28,19 +28,18 @@ func New(handlers *Handlers) *chi.Mux {
 	r.Delete("/{username}/posts/{post_id}", handlers.PostHandler.DeletePostByID())       // Удаление поста (по header)
 
 	// GET /feed // Лента новостей. Посты тех на кого подписан пользователь (по header)
+	// GET /notifications // Уведомления пользователя (по header)
 
 	// POST /{username}/posts/{post_id}/repost // Репост чужого поста в свой профиль (1 раз) (по header)
 	// DELETE /{username}/posts/{post_id}/repost // Удаление репоста из своего профиля (по header)
 
-	// POST /{username}/posts/{post_id}/like // Лайк на пост (1 раз) (по header)
-	// DELETE /{username}/posts/{post_id}/like // Удаление лайка с поста
+	r.Post("/{username}/posts/{post_id}/like", handlers.PostHandler.LikePost())     // Лайк на пост (по header)
+	r.Delete("/{username}/posts/{post_id}/like", handlers.PostHandler.UnlikePost()) // Удаление лайка с поста
 
 	r.Post("/{username}/follow", handlers.UserHandler.FollowUser())           // Подписаться на пользователя (по header)
 	r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())  // Отписаться от пользователя (по header)
 	r.Get("/{username}/followers", handlers.UserHandler.GetFollowersByUser()) // Подписчики пользователя
 	r.Get("/{username}/following", handlers.UserHandler.GetFollowingByUser()) // На кого пользователь подписан
-
-	// GET /notifications // Уведомления пользователя (по header)
 
 	return r
 }
