@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"x-clone/internal/model"
 	"x-clone/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type PostService struct {
@@ -29,98 +31,116 @@ func (s *PostService) CreatePost(post *model.Post, username string) error {
 	return nil
 }
 
-func (s *PostService) GetUserPosts(username string) ([]model.Post, error) {
-	user, err := s.userRepo.FindUserByUsername(username)
+func (s *PostService) GetUserPosts(userID int) (*[]model.Post, error) {
+	posts, err := s.postRepo.GetUserPosts(userID)
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("posts not found")
+		} else {
+			return nil, err
+		}
 	}
-	return s.postRepo.GetUserPosts(user.UserID)
+	return posts, nil
 }
 
 func (s *PostService) GetUserPostByID(userID, postID int) (*model.Post, error) {
 	post, err := s.postRepo.GetUserPostByID(userID, postID)
 	if err != nil {
-		return nil, fmt.Errorf("post not found")
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("post not found")
+		} else {
+			return nil, err
+		}
 	}
-	return post, err
+	return post, nil
 }
 
-func (s *PostService) UpdatePostContentByID(postID, userID int, content string) error {
-	if content == "" {
-		return fmt.Errorf("post content cannot be empty")
-	}
-
-	postExists, err := s.postRepo.PostExists(postID)
-	if err != nil {
-		return err
-	}
-	if !postExists {
-		return fmt.Errorf("post not found")
-	}
-
-	isOwner, err := s.postRepo.IsPostOwner(postID, userID)
-	if err != nil {
-		return err
-	}
-	if !isOwner {
-		return fmt.Errorf("you are not the owner of this post")
-	}
-
-	if err := s.postRepo.UpdatePostContentByID(postID, content); err != nil {
-		return err
+func (s *PostService) UpdatePostContentByID(userID, postID int, content string) error {
+	if err := s.postRepo.UpdatePostContentByID(userID, postID, content); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
 	}
 	return nil
 }
 
-func (s *PostService) DeletePostByID(postID, userID int) error {
-	postExists, err := s.postRepo.PostExists(postID)
-	if err != nil {
-		return err
-	}
-	if !postExists {
-		return fmt.Errorf("post not found")
-	}
-
-	isOwner, err := s.postRepo.IsPostOwner(postID, userID)
-	if err != nil {
-		return err
-	}
-	if !isOwner {
-		return fmt.Errorf("you are not the owner of this post")
-	}
-
-	if err := s.postRepo.DeletePostByID(postID); err != nil {
-		return err
+func (s *PostService) DeletePostByID(userID, postID int) error {
+	if err := s.postRepo.DeletePostByID(userID, postID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *PostService) LikePost(userID, postID int) error {
-	postExists, err := s.postRepo.PostExists(postID)
-	if err != nil {
-		return err
-	}
-	if !postExists {
-		return fmt.Errorf("post not found")
-	}
-
 	if err := s.postRepo.LikePost(userID, postID); err != nil {
-		return err
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *PostService) UnlikePost(userID, postID int) error {
-	postExists, err := s.postRepo.PostExists(postID)
-	if err != nil {
-		return err
-	}
-	if !postExists {
-		return fmt.Errorf("post not found")
-	}
-
 	if err := s.postRepo.UnlikePost(userID, postID); err != nil {
-		return err
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
 	}
 	return nil
+}
+
+func (s *PostService) RepostPost(userID, postID int) error {
+	if err := s.postRepo.RepostPost(userID, postID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *PostService) UndoRepostPost(userID, postID int) error {
+	if err := s.postRepo.UndoRepostPost(userID, postID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post not found")
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *PostService) GetUserReposts(userID int) (*[]model.Post, error) {
+	reposts, err := s.postRepo.GetUserReposts(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("reposts not found")
+		} else {
+			return nil, err
+		}
+	}
+	return reposts, nil
+}
+
+func (s *PostService) QuotePost(userID, postID int, content string) (*model.Post, error) {
+	post, err := s.postRepo.QuotePost(userID, postID, content)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("post not found")
+		} else {
+			return nil, err
+		}
+	}
+	return post, nil
 }

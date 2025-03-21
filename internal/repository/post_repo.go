@@ -22,74 +22,71 @@ func (r *PostRepository) CreatePost(post *model.Post) error {
 	return nil
 }
 
-func (r *PostRepository) GetUserPosts(userID int) ([]model.Post, error) {
+func (r *PostRepository) GetUserPosts(userID int) (*[]model.Post, error) {
 	var posts []model.Post
-	if err := r.db.Where("user_id = ?", userID).Find(&posts).Error; err != nil {
+	if err := r.db.Preload("OriginalPost", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("OriginalPost") // Recursive preload OriginalPost *Post
+	}).Where("user_id = ?", userID).Find(&posts).Error; err != nil {
 		return nil, err
 	}
-	return posts, nil
+	return &posts, nil
 }
 
 func (r *PostRepository) GetUserPostByID(userID, postID int) (*model.Post, error) {
 	var post model.Post
-	if err := r.db.Model(&model.Post{}).Where("user_id = ? AND post_id = ?", userID, postID).First(&post).Error; err != nil {
+	if err := r.db.Preload("OriginalPost", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("OriginalPost") // Recursive preload OriginalPost *Post
+	}).Where("user_id = ? AND post_id = ?", userID, postID).First(&post).Error; err != nil {
 		return nil, err
 	}
 	return &post, nil
 }
 
-func (r *PostRepository) PostExists(postID int) (bool, error) {
-	var post model.Post
-	if err := r.db.Where("post_id = ?", postID).First(&post).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (r *PostRepository) IsPostOwner(postID int, userID int) (bool, error) {
-	var post model.Post
-	if err := r.db.Where("post_id = ? AND user_id = ?", postID, userID).First(&post).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (r *PostRepository) UpdatePostContentByID(postID int, content string) error {
-	var post model.Post
-	if err := r.db.Model(&model.Post{}).Where("post_id = ?", postID).First(&post).Error; err != nil {
-		return err
-	}
-	if err := r.db.Model(&post).Update("content", content).Error; err != nil {
+func (r *PostRepository) UpdatePostContentByID(userID, postID int, content string) error {
+	if err := r.db.Model(&model.Post{}).Where("user_id = ? AND post_id = ?", userID, postID).Update("content", content).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *PostRepository) DeletePostByID(postID int) error {
-	var post model.Post
-	if err := r.db.Model(&model.Post{}).Where("post_id = ?", postID).First(&post).Error; err != nil {
-		return err
-	}
-	if err := r.db.Delete(&post).Error; err != nil {
-		return err
-	}
-	return nil
+func (r *PostRepository) DeletePostByID(userID, postID int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Deleting all reposts associated with this post
+		if err := tx.Where("reposted_post_id = ?", postID).Delete(&model.Repost{}).Error; err != nil {
+			return err
+		}
+
+		// Deleting all likes associated with this post
+		if err := tx.Where("liked_post_id = ?", postID).Delete(&model.Like{}).Error; err != nil {
+			return err
+		}
+
+		// Deleting all quotes asscodiated with this post
+		var quotes []model.Post
+		if err := tx.Where("original_post_id = ?", postID).Find(&quotes).Error; err != nil {
+			return err
+		}
+		for _, quote := range quotes {
+			if err := r.DeletePostByID(quote.UserID, quote.PostID); err != nil {
+				return err
+			}
+		}
+
+		// Deleting the post itself
+		if err := tx.Where("user_id = ? AND post_id = ?", userID, postID).Delete(&model.Post{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *PostRepository) LikePost(userID, postID int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// IsLiking
+		// IsLiked
 		var existingLike model.Like
 		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				// Continuing transaction...
-			} else {
+			if err != gorm.ErrRecordNotFound {
 				return err
 			}
 		} else {
@@ -116,7 +113,7 @@ func (r *PostRepository) LikePost(userID, postID int) error {
 
 func (r *PostRepository) UnlikePost(userID, postID int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// IsLiking
+		// IsLiked
 		var existingLike model.Like
 		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -137,4 +134,99 @@ func (r *PostRepository) UnlikePost(userID, postID int) error {
 
 		return nil
 	})
+}
+
+func (r *PostRepository) RepostPost(userID, postID int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// IsReposted
+		var existingRepost model.Repost
+		if err := tx.Where("user_id = ? AND reposted_post_id = ?", userID, postID).First(&existingRepost).Error; err != nil {
+			if err != gorm.ErrRecordNotFound {
+				return err
+			}
+		} else {
+			return fmt.Errorf("you've already reposted this post")
+		}
+
+		// CreateRepost
+		repost := &model.Repost{
+			UserID:         userID,
+			RepostedPostID: postID,
+		}
+		if err := tx.Create(repost).Error; err != nil {
+			return err
+		}
+
+		// IncrementReposts
+		if err := tx.Model(&model.Post{}).Where("post_id = ?", postID).Update("reposts", gorm.Expr("reposts + 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *PostRepository) UndoRepostPost(userID, postID int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// IsReposted
+		var existingRepost model.Repost
+		if err := tx.Where("user_id = ? AND reposted_post_id = ?", userID, postID).First(&existingRepost).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("you haven't reposted this post")
+			}
+			return err
+		}
+
+		// DeleteRepost
+		if err := tx.Delete(&existingRepost).Error; err != nil {
+			return err
+		}
+
+		// DecrementReposts
+		if err := tx.Model(&model.Post{}).Where("post_id = ?", postID).Update("reposts", gorm.Expr("reposts - 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *PostRepository) GetUserReposts(userID int) (*[]model.Post, error) {
+	var reposts []model.Repost
+	if err := r.db.Where("user_id = ?", userID).Find(&reposts).Error; err != nil {
+		return nil, err
+	}
+
+	var postIDs []int
+	for _, repost := range reposts {
+		postIDs = append(postIDs, repost.RepostedPostID)
+	}
+
+	var posts []model.Post
+	if err := r.db.Where("post_id IN ?", postIDs).Find(&posts).Error; err != nil {
+		return nil, err
+	}
+
+	return &posts, nil
+}
+
+func (r *PostRepository) QuotePost(userID, postID int, content string) (*model.Post, error) {
+	post := &model.Post{
+		UserID:         userID,
+		Content:        content,
+		OriginalPostID: &postID,
+	}
+
+	if err := r.db.Create(post).Error; err != nil {
+		return nil, err
+	}
+
+	var quotedPost model.Post
+	if err := r.db.Preload("OriginalPost", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("OriginalPost") // Recursive preload OriginalPost *Post
+	}).Where("post_id = ?", post.PostID).First(&quotedPost).Error; err != nil {
+		return nil, err
+	}
+
+	return &quotedPost, nil
 }

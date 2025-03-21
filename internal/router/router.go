@@ -30,8 +30,11 @@ func New(handlers *Handlers) *chi.Mux {
 	// GET /feed // Лента новостей. Посты тех на кого подписан пользователь (по header)
 	// GET /notifications // Уведомления пользователя (по header)
 
-	// POST /{username}/posts/{post_id}/repost // Репост чужого поста в свой профиль (1 раз) (по header)
-	// DELETE /{username}/posts/{post_id}/repost // Удаление репоста из своего профиля (по header)
+	r.Get("/{username}/reposts", handlers.PostHandler.GetUserReposts())                   // Все репосты пользователя
+	r.Post("/{username}/posts/{post_id}/repost", handlers.PostHandler.RepostPost())       // Репост чужого поста в свой профиль (по header)
+	r.Delete("/{username}/posts/{post_id}/repost", handlers.PostHandler.UndoRepostPost()) // Удаление репоста из своего профиля (по header)
+
+	r.Post("/{username}/posts/{post_id}/quote", handlers.PostHandler.QuotePost()) // Цитата на пост чужого поста (по header)
 
 	r.Post("/{username}/posts/{post_id}/like", handlers.PostHandler.LikePost())     // Лайк на пост (по header)
 	r.Delete("/{username}/posts/{post_id}/like", handlers.PostHandler.UnlikePost()) // Удаление лайка с поста
