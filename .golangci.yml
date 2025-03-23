@@ -1,0 +1,71 @@
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 30m
+  
+  modules-download-mode: readonly
+
+  go: '1.21'
+
+output:
+  # colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
+  # default is "colored-line-number"
+  format: code-climate
+
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct
+    - exhaustruct
+    - gofumpt
+    - testpackage
+    - depguard
+    - tagliatelle
+    #   deprecated
+    - deadcode
+    - ifshort
+    - maligned
+    - nosnakecase
+    - scopelint
+    - interfacer
+    - golint
+    - varcheck
+    - structcheck
+    - gomoddirectives
+
+linters-settings:
+  stylecheck:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.21"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all", "-ST1000" ]
+  funlen:
+    lines: 100
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(file-dispatcher)
+      # gci write -s standard -s default -s "prefix(file-dispatcher.*, gitlab.sima-land.ru/dev-dep/dev/.*)"
+  gocyclo:
+    min-complexity: 5
+  varnamelen:
+    ignore-names:
+      - id
+    ignore-decls:
+      - ok bool
+  wrapcheck:
+    ignorePackageGlobs:
+      - google.golang.org/grpc/status
+      - github.com/pkg/errors
+      - golang.org/x/sync/errgroup
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - containedctx
+        - funlen
+        - goerr113
+        - varnamelen
+        - staticcheck
+        - maintidx
