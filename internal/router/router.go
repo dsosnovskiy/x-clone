@@ -14,7 +14,7 @@ type Handlers struct {
 func New(handlers *Handlers) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Post("/createuser", handlers.UserHandler.CreateUser()) // Создать пользователя. Временно, замена ниже...
+	r.Post("/createuser", handlers.UserHandler.CreateUser()) // Создать пользователя. Временно (пока нет JWT), замена ниже...
 	// POST /auth/register - зарегистрировать пользователя.
 	// POST /auth/login - авторизировать пользователя.
 	// POST /auth/logout - выйти из аккаунта.
