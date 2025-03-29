@@ -21,7 +21,11 @@ func Init(env string) *logrus.Logger {
 	case "dev":
 		logger.SetLevel(logrus.InfoLevel)
 
-		logger.SetFormatter(&logrus.JSONFormatter{})
+		logger.SetFormatter(&logrus.TextFormatter{
+			DisableLevelTruncation: true,
+			ForceColors:            true,
+			FullTimestamp:          true,
+		})
 	case "prod":
 		logger.SetLevel(logrus.WarnLevel)
 

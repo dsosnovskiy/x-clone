@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"x-clone/internal/model"
 	"x-clone/internal/repository"
-	"x-clone/pkg/hash"
+	"x-clone/pkg/utils/hash"
 )
 
 type UserService struct {
