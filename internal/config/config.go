@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 )
 
 type ServerConfig struct {
@@ -35,12 +34,8 @@ type Config struct {
 }
 
 func Load() *Config {
-
-	if err := godotenv.Load(); err != nil {
-		log.Printf(".env file not found: %v", err)
-	}
-
 	cfg := &Config{}
+
 	if err := cleanenv.ReadConfig("internal/config/config.yaml", cfg); err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
