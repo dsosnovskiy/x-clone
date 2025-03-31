@@ -7,5 +7,5 @@ database:
   sslmode: "disable"
 
 jwt:
-  access_token_ttl: 15m # 15 minutes
+  access_token_ttl: 2h # 2 hours
   refresh_token_ttl: 168h # 7 days

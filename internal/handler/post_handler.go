@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"x-clone/internal/model"
 	"x-clone/internal/service"
+	"x-clone/pkg/middleware"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -21,9 +22,14 @@ func NewPostHandler(postService *service.PostService, userService *service.UserS
 
 func (h *PostHandler) CreatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameHeader := r.Header.Get("Username")
-		if usernameHeader == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		user, err := h.userService.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -38,7 +44,7 @@ func (h *PostHandler) CreatePost() http.HandlerFunc {
 			return
 		}
 
-		if err := h.postService.CreatePost(&post, usernameHeader); err != nil {
+		if err := h.postService.CreatePost(&post, user.UserID); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -74,6 +80,7 @@ func (h *PostHandler) GetUserPosts() http.HandlerFunc {
 func (h *PostHandler) GetUserPostByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "username")
+
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
 			http.Error(w, "Invalid PostID", http.StatusBadRequest)
@@ -100,9 +107,14 @@ func (h *PostHandler) GetUserPostByID() http.HandlerFunc {
 
 func (h *PostHandler) UpdatePostContentByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameHeader := r.Header.Get("Username")
-		if usernameHeader == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		user, err := h.userService.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -113,7 +125,7 @@ func (h *PostHandler) UpdatePostContentByID() http.HandlerFunc {
 			return
 		}
 
-		if usernameOwner != usernameHeader {
+		if usernameOwner != user.Username {
 			http.Error(w, "you are not owner of this post", http.StatusForbidden)
 			return
 		}
@@ -163,9 +175,14 @@ func (h *PostHandler) UpdatePostContentByID() http.HandlerFunc {
 
 func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameHeader := r.Header.Get("Username")
-		if usernameHeader == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		user, err := h.userService.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -176,7 +193,7 @@ func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 			return
 		}
 
-		if usernameOwner != usernameHeader {
+		if usernameOwner != user.Username {
 			http.Error(w, "you are not owner of this post", http.StatusForbidden)
 			return
 		}
@@ -199,17 +216,18 @@ func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successful deletion of the post"))
 	}
 }
 
 func (h *PostHandler) LikePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameWhoLiked := r.Header.Get("Username")
-		if usernameWhoLiked == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userWhoLiked, err := h.userService.FindUserByUsername(usernameWhoLiked)
+		userWhoLiked, err := h.userService.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -240,17 +258,18 @@ func (h *PostHandler) LikePost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successful liking of the post"))
 	}
 }
 
 func (h *PostHandler) UnlikePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameWhoLiked := r.Header.Get("Username")
-		if usernameWhoLiked == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userWhoLiked, err := h.userService.FindUserByUsername(usernameWhoLiked)
+		userWhoLiked, err := h.userService.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -281,17 +300,18 @@ func (h *PostHandler) UnlikePost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successful unliking of the post"))
 	}
 }
 
 func (h *PostHandler) RepostPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameWhoReposted := r.Header.Get("Username")
-		if usernameWhoReposted == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userWhoReposted, err := h.userService.FindUserByUsername(usernameWhoReposted)
+		userWhoReposted, err := h.userService.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -322,17 +342,18 @@ func (h *PostHandler) RepostPost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successful repost of the post"))
 	}
 }
 
 func (h *PostHandler) UndoRepostPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameWhoReposted := r.Header.Get("Username")
-		if usernameWhoReposted == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userWhoReposted, err := h.userService.FindUserByUsername(usernameWhoReposted)
+		userWhoReposted, err := h.userService.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -363,6 +384,7 @@ func (h *PostHandler) UndoRepostPost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("successful undorepost of the post"))
 	}
 }
 
@@ -390,12 +412,12 @@ func (h *PostHandler) GetUserReposts() http.HandlerFunc {
 
 func (h *PostHandler) QuotePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usernameWhoQuoted := r.Header.Get("Username")
-		if usernameWhoQuoted == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userWhoQuoted, err := h.userService.FindUserByUsername(usernameWhoQuoted)
+		userWhoQuoted, err := h.userService.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

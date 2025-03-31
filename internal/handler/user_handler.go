@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"x-clone/internal/model"
 	"x-clone/internal/service"
+	"x-clone/pkg/middleware"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -15,32 +16,6 @@ type UserHandler struct {
 
 func NewUserHandler(userService *service.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
-}
-
-func (h *UserHandler) CreateUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var user model.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
-
-		if err := user.Validate(); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := h.userService.CreateUser(&user); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		userResponse := user.ToResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(userResponse)
-	}
 }
 
 func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
@@ -61,20 +36,13 @@ func (h *UserHandler) FindUserByUsername() http.HandlerFunc {
 
 func (h *UserHandler) FollowUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		followingUsername := chi.URLParam(r, "username")
-
-		followerUsername := r.Header.Get("Username")
-
-		if followerUsername == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
-			return
-		}
-
-		followerUser, err := h.userService.FindUserByUsername(followerUsername)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
 
 		followingUser, err := h.userService.FindUserByUsername(followingUsername)
 		if err != nil {
@@ -82,7 +50,7 @@ func (h *UserHandler) FollowUser() http.HandlerFunc {
 			return
 		}
 
-		if err := h.userService.FollowUser(followerUser.UserID, followingUser.UserID); err != nil {
+		if err := h.userService.FollowUser(userID, followingUser.UserID); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -94,18 +62,17 @@ func (h *UserHandler) FollowUser() http.HandlerFunc {
 
 func (h *UserHandler) StopFollowingUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		followingUsername := chi.URLParam(r, "username")
-
-		followerUsername := r.Header.Get("Username")
-
-		if followerUsername == "" {
-			http.Error(w, "missing Username header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		followerUser, err := h.userService.FindUserByUsername(followerUsername)
+		followingUsername := chi.URLParam(r, "username")
+
+		followerUser, err := h.userService.GetUserByID(userID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 

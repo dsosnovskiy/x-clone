@@ -17,8 +17,8 @@ func NewPostService(postRepo *repository.PostRepository, userRepo *repository.Us
 	return &PostService{postRepo: postRepo, userRepo: userRepo}
 }
 
-func (s *PostService) CreatePost(post *model.Post, username string) error {
-	user, err := s.userRepo.FindUserByUsername(username)
+func (s *PostService) CreatePost(post *model.Post, userID int) error {
+	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
 		return err
 	}

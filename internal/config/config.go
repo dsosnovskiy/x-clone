@@ -36,12 +36,12 @@ type Config struct {
 func Load() *Config {
 	cfg := &Config{}
 
-	if err := cleanenv.ReadConfig("internal/config/config.yaml", cfg); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
-
 	if err := cleanenv.ReadEnv(cfg); err != nil {
 		log.Fatalf("Failed to load env vars: %v", err)
+	}
+
+	if err := cleanenv.ReadConfig("internal/config/config.yaml", cfg); err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	return cfg
