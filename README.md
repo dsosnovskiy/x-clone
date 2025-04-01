@@ -121,7 +121,7 @@
 **Response Body Schema**:
 
 ```
-successfully follow user: {username}
+successful follow user: {username}
 ```
 
 ## **/{username}/follow {DELETE}**
@@ -131,7 +131,7 @@ successfully follow user: {username}
 **Response Body Schema**:
 
 ```
-successfully stop following user: {username}
+successful stop following user: {username}
 ```
 
 ## **/{username}/followers {GET}**
