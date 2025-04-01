@@ -22,6 +22,19 @@
 
 # 🔍 API Description
 
+## ⚙️ Setup .env file
+
+```
+APP_ENV=local/dev/prod
+
+DB_NAME=...
+DB_USER=...
+DB_PASSWORD=...
+JWT_SECRET=...
+```
+
+# ,🚀 Endpoints
+
 ## 🔐 Authentication
 
 **Upon registration/authentication, the user receives a `JWT token` (Access only, `access_token_ttl: 2h`).**
@@ -92,7 +105,7 @@
 }
 ```
 
-# 👤 User Endpoints
+# 👤 User
 
 ## **/{username} {GET}**
 
@@ -200,7 +213,7 @@ successful stop following user: {username}
 ]
 ```
 
-# 📝 Post Endpoints
+# 📝 Post
 
 ## **/compose/post {POST}**
 
@@ -448,7 +461,7 @@ successful undo repost of the post: {post_id}
 }
 ```
 
-# 🚧 Planned Endpoints
+# 🚧 Planned
 
 ## **/auth/refresh {POST}**
 
