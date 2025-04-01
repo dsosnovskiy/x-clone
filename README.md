@@ -33,7 +33,7 @@ DB_PASSWORD=...
 JWT_SECRET=...
 ```
 
-# ,🚀 Endpoints
+# 🚀 Endpoints
 
 ## 🔐 Authentication
 
