@@ -384,7 +384,7 @@ func (h *PostHandler) UndoRepostPost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful undorepost of the post: " + chi.URLParam(r, "post_id")))
+		w.Write([]byte("successful undo repost of the post: " + chi.URLParam(r, "post_id")))
 	}
 }
 

@@ -15,7 +15,7 @@ type Post struct {
 	CreatedAt      time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	OriginalPostID *int      `json:"original_post_id" gorm:"index;default:null"`
-	OriginalPost   *Post     `gorm:"foreignKey:OriginalPostID;references:PostID"`
+	OriginalPost   *Post     `json:"original_post" gorm:"foreignKey:OriginalPostID;references:PostID"`
 }
 
 type Like struct {

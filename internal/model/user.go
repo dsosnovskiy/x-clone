@@ -13,7 +13,7 @@ type User struct {
 	FirstName     string    `json:"first_name" gorm:"not null" validate:"required,min=2,max=32"`
 	LastName      string    `json:"last_name" gorm:"not null" validate:"required,min=2,max=32"`
 	Birthday      *string   `json:"birthday" gorm:"default:null" validate:"omitempty,datetime=2006-01-02"`
-	Bio           *string   `json:"bio" gorm:"size:300;default:null" validate:"omitempty,max=300"`
+	Bio           *string   `json:"bio" gorm:"default:null" validate:"omitempty,min=1,max=300"`
 	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	Followers     int       `json:"followers" gorm:"default:0"`
