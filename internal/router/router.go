@@ -31,19 +31,15 @@ func New(handlers *Handlers, authMiddleware func(http.Handler) http.Handler) *ch
 		r.Get("/{username}/posts/{post_id}", handlers.PostHandler.GetUserPostByID())
 		r.Patch("/{username}/posts/{post_id}", handlers.PostHandler.UpdatePostContentByID())
 		r.Delete("/{username}/posts/{post_id}", handlers.PostHandler.DeletePostByID())
+		r.Get("/{username}/reposts", handlers.PostHandler.GetUserReposts())
+		r.Post("/{username}/posts/{post_id}/like", handlers.PostHandler.LikePost())
+		r.Delete("/{username}/posts/{post_id}/like", handlers.PostHandler.UnlikePost())
+		r.Post("/{username}/posts/{post_id}/repost", handlers.PostHandler.RepostPost())
+		r.Delete("/{username}/posts/{post_id}/repost", handlers.PostHandler.UndoRepostPost())
+		r.Post("/{username}/posts/{post_id}/quote", handlers.PostHandler.QuotePost())
 
 		// USER
 		r.Get("/{username}", handlers.UserHandler.FindUserByUsername())
-
-		r.Get("/{username}/reposts", handlers.PostHandler.GetUserReposts())
-		r.Post("/{username}/posts/{post_id}/repost", handlers.PostHandler.RepostPost())
-		r.Delete("/{username}/posts/{post_id}/repost", handlers.PostHandler.UndoRepostPost())
-
-		r.Post("/{username}/posts/{post_id}/quote", handlers.PostHandler.QuotePost())
-
-		r.Post("/{username}/posts/{post_id}/like", handlers.PostHandler.LikePost())
-		r.Delete("/{username}/posts/{post_id}/like", handlers.PostHandler.UnlikePost())
-
 		r.Post("/{username}/follow", handlers.UserHandler.FollowUser())
 		r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())
 		r.Get("/{username}/followers", handlers.UserHandler.GetFollowersByUser())
