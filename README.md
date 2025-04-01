@@ -206,6 +206,20 @@ successful stop following user: {username}
 
 **Description**: Create post
 
+**Request Body Schema**:
+
+```json
+{
+  "content": "string"
+}
+```
+
+**Content Fields**:
+
+| Field     | Type   | Required | Limits | Example                        |
+| --------- | ------ | -------- | ------ | ------------------------------ |
+| `content` | string | Yes      | 1-1000 | `Hi, this is my first post :)` |
+
 **Response Body Schema**:
 
 ```json
@@ -286,6 +300,12 @@ successful stop following user: {username}
   "content": "string"
 }
 ```
+
+**Content Fields**:
+
+| Field     | Type   | Required | Limits | Example                           |
+| --------- | ------ | -------- | ------ | --------------------------------- |
+| `content` | string | Yes      | 1-1000 | `Hi, this is my modified post :)` |
 
 **Response Body Schema**:
 
@@ -389,6 +409,18 @@ successful undo repost of the post: {post_id}
 ## **/{username}/posts/{post_id}/quote {POST}**
 
 **Description**: Quote post by ID
+
+**Request Body Schema**:
+
+```json
+{
+  "content": "string"
+}
+```
+
+| Field     | Type   | Required | Limits | Example    |
+| --------- | ------ | -------- | ------ | ---------- |
+| `content` | string | Yes      | 1-1000 | `My quote` |
 
 **Response Body Schema**:
 
