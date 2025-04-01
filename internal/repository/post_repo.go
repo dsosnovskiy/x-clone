@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"fmt"
+	"errors"
 	"x-clone/internal/model"
 
 	"gorm.io/gorm"
@@ -90,7 +90,7 @@ func (r *PostRepository) LikePost(userID, postID int) error {
 				return err
 			}
 		} else {
-			return fmt.Errorf("you've already liked this post")
+			return errors.New("you've already liked this post")
 		}
 
 		// CreateLike
@@ -117,7 +117,7 @@ func (r *PostRepository) UnlikePost(userID, postID int) error {
 		var existingLike model.Like
 		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				return fmt.Errorf("you already don't like this post")
+				return errors.New("you already don't like this post")
 			}
 			return err
 		}
@@ -145,7 +145,7 @@ func (r *PostRepository) RepostPost(userID, postID int) error {
 				return err
 			}
 		} else {
-			return fmt.Errorf("you've already reposted this post")
+			return errors.New("you've already reposted this post")
 		}
 
 		// CreateRepost
@@ -172,7 +172,7 @@ func (r *PostRepository) UndoRepostPost(userID, postID int) error {
 		var existingRepost model.Repost
 		if err := tx.Where("user_id = ? AND reposted_post_id = ?", userID, postID).First(&existingRepost).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				return fmt.Errorf("you haven't reposted this post")
+				return errors.New("you haven't reposted this post")
 			}
 			return err
 		}

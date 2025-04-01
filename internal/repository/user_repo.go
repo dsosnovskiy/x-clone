@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"fmt"
+	"errors"
 	"x-clone/internal/model"
 
 	"gorm.io/gorm"
@@ -42,7 +42,7 @@ func (r *UserRepository) FollowUser(followerID, followingID int) error {
 				return err
 			}
 		} else {
-			return fmt.Errorf("you are already following this user")
+			return errors.New("you are already following this user")
 		}
 
 		// CreateFollower
@@ -73,7 +73,7 @@ func (r *UserRepository) StopFollowingUser(followerID, followingID int) error {
 		var existingFollower model.Follower
 		if err := tx.Where("follower_id = ? AND following_id = ?", followerID, followingID).First(&existingFollower).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				return fmt.Errorf("you are not following this user")
+				return errors.New("you are not following this user")
 			}
 			return err
 		}

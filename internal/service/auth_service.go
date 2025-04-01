@@ -63,10 +63,6 @@ func (s *AuthService) GenerateAccessToken(user *model.User) (string, error) {
 }
 
 func (s *AuthService) ValidateAccessToken(tokenString string) (jwt.MapClaims, error) {
-	if s.cfg.JWT.Secret == "" {
-		return nil, errors.New("JWT secret not configured")
-	}
-
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWT.Secret), nil
 	})

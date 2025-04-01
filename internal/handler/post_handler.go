@@ -258,7 +258,7 @@ func (h *PostHandler) LikePost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful liking of the post"))
+		w.Write([]byte("successful liking of the post: " + chi.URLParam(r, "post_id")))
 	}
 }
 
@@ -300,7 +300,7 @@ func (h *PostHandler) UnlikePost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful unliking of the post"))
+		w.Write([]byte("successful unliking of the post: " + chi.URLParam(r, "post_id")))
 	}
 }
 
@@ -342,7 +342,7 @@ func (h *PostHandler) RepostPost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful repost of the post"))
+		w.Write([]byte("successful repost of the post: " + chi.URLParam(r, "post_id")))
 	}
 }
 
@@ -384,7 +384,7 @@ func (h *PostHandler) UndoRepostPost() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful undorepost of the post"))
+		w.Write([]byte("successful undorepost of the post: " + chi.URLParam(r, "post_id")))
 	}
 }
 

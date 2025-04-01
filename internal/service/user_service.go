@@ -1,7 +1,7 @@
 package service
 
 import (
-	"fmt"
+	"errors"
 	"x-clone/internal/model"
 	"x-clone/internal/repository"
 )
@@ -17,7 +17,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 func (s *UserService) GetUserByID(userID int) (*model.UserResponse, error) {
 	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.New("user not found")
 	}
 	userResponse := user.ToResponse()
 	return &userResponse, nil
@@ -26,7 +26,7 @@ func (s *UserService) GetUserByID(userID int) (*model.UserResponse, error) {
 func (s *UserService) FindUserByUsername(username string) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindUserByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.New("user not found")
 	}
 	userResponse := user.ToResponse()
 	return &userResponse, nil
@@ -34,7 +34,7 @@ func (s *UserService) FindUserByUsername(username string) (*model.UserResponse, 
 
 func (s *UserService) FollowUser(followerID, followingID int) error {
 	if followerID == followingID {
-		return fmt.Errorf("you cannot follow or stop following yourself")
+		return errors.New("you cannot follow or stop following yourself")
 	}
 	if err := s.userRepo.FollowUser(followerID, followingID); err != nil {
 		return err
@@ -44,7 +44,7 @@ func (s *UserService) FollowUser(followerID, followingID int) error {
 
 func (s *UserService) StopFollowingUser(followerID, followingID int) error {
 	if followerID == followingID {
-		return fmt.Errorf("you cannot follow or stop following yourself")
+		return errors.New("you cannot follow or stop following yourself")
 	}
 	if err := s.userRepo.StopFollowingUser(followerID, followingID); err != nil {
 		return err

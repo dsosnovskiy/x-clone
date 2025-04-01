@@ -16,18 +16,18 @@ type Handlers struct {
 func New(handlers *Handlers, authMiddleware func(http.Handler) http.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
-	// В будущем добавить Refresh токен...
+	// In the future, add a Refresh token....
 	// r.Post("/auth/refresh", handlers.AuthHandler.Refresh())   // Рефреш токенов
 	// r.Post("/auth/logout", handlers.AuthHandler.Logout())     // Выйти из аккаунта
 
-	// Пока только Access токен
+	// Access only
 	r.Group(func(r chi.Router) {
 		r.Post("/auth/register", handlers.AuthHandler.Register()) // Регистрация
 		r.Post("/auth/login", handlers.AuthHandler.Login())       // Логин
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(authMiddleware) // Применяем middleware ко всем роутам в группе
+		r.Use(authMiddleware) // Apply middleware to all routers in the group
 
 		r.Get("/{username}", handlers.UserHandler.FindUserByUsername()) // Информация о пользователе
 

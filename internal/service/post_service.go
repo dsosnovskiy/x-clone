@@ -1,7 +1,7 @@
 package service
 
 import (
-	"fmt"
+	"errors"
 	"x-clone/internal/model"
 	"x-clone/internal/repository"
 
@@ -26,7 +26,7 @@ func (s *PostService) CreatePost(post *model.Post, userID int) error {
 	post.UserID = user.UserID
 
 	if err := s.postRepo.CreatePost(post); err != nil {
-		return fmt.Errorf("failed to create post: %v", err)
+		return errors.New("failed to create post")
 	}
 	return nil
 }
@@ -35,7 +35,7 @@ func (s *PostService) GetUserPosts(userID int) (*[]model.Post, error) {
 	posts, err := s.postRepo.GetUserPosts(userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("posts not found")
+			return nil, errors.New("posts not found")
 		} else {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func (s *PostService) GetUserPostByID(userID, postID int) (*model.Post, error) {
 	post, err := s.postRepo.GetUserPostByID(userID, postID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("post not found")
+			return nil, errors.New("post not found")
 		} else {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func (s *PostService) GetUserPostByID(userID, postID int) (*model.Post, error) {
 func (s *PostService) UpdatePostContentByID(userID, postID int, content string) error {
 	if err := s.postRepo.UpdatePostContentByID(userID, postID, content); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -69,7 +69,7 @@ func (s *PostService) UpdatePostContentByID(userID, postID int, content string) 
 func (s *PostService) DeletePostByID(userID, postID int) error {
 	if err := s.postRepo.DeletePostByID(userID, postID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -80,7 +80,7 @@ func (s *PostService) DeletePostByID(userID, postID int) error {
 func (s *PostService) LikePost(userID, postID int) error {
 	if err := s.postRepo.LikePost(userID, postID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -91,7 +91,7 @@ func (s *PostService) LikePost(userID, postID int) error {
 func (s *PostService) UnlikePost(userID, postID int) error {
 	if err := s.postRepo.UnlikePost(userID, postID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -102,7 +102,7 @@ func (s *PostService) UnlikePost(userID, postID int) error {
 func (s *PostService) RepostPost(userID, postID int) error {
 	if err := s.postRepo.RepostPost(userID, postID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -113,7 +113,7 @@ func (s *PostService) RepostPost(userID, postID int) error {
 func (s *PostService) UndoRepostPost(userID, postID int) error {
 	if err := s.postRepo.UndoRepostPost(userID, postID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("post not found")
+			return errors.New("post not found")
 		} else {
 			return err
 		}
@@ -125,7 +125,7 @@ func (s *PostService) GetUserReposts(userID int) (*[]model.Post, error) {
 	reposts, err := s.postRepo.GetUserReposts(userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("reposts not found")
+			return nil, errors.New("reposts not found")
 		} else {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (s *PostService) QuotePost(userID, postID int, content string) (*model.Post
 	post, err := s.postRepo.QuotePost(userID, postID, content)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("post not found")
+			return nil, errors.New("post not found")
 		} else {
 			return nil, err
 		}
