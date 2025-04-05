@@ -15,7 +15,6 @@
 - **Caching**: `Redis`
 - **Secure**: `Refresh Token`
 - **New functionality**:
-  - Edit profile
   - News feed
   - Notifications
 - **Containerization**: `Docker`
@@ -540,10 +539,6 @@ successful undo repost of the post: {post_id}
 ## **/auth/logout {POST}**
 
 **Description**: Log out of the account
-
-## **/setting/profile {PATCH}**
-
-**Description**: Update user profile
 
 ## **/feed {GET}**
 
