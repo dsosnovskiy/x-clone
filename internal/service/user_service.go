@@ -4,6 +4,7 @@ import (
 	"errors"
 	"x-clone/internal/model"
 	"x-clone/internal/repository"
+	"x-clone/pkg/utils/hash"
 )
 
 type UserService struct {
@@ -78,4 +79,37 @@ func (s *UserService) GetFollowingByUser(userID int) ([]model.UserResponse, erro
 	}
 
 	return userResponses, nil
+}
+
+func (s *UserService) ChangeProfile(userID int, username, firstName, lastName, birthday, bio *string) error {
+	if err := s.userRepo.ChangeProfile(userID, username, firstName, lastName, birthday, bio); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) ChangePassword(userID int, oldPassword, newPassword, confirmPassword string) error {
+	if oldPassword == newPassword {
+		return errors.New("the new password cannot be equal to the old password")
+	}
+	if newPassword != confirmPassword {
+		return errors.New("failed password confirmation")
+	}
+	user, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+	if !hash.CheckPassword(oldPassword, user.Password) {
+		return errors.New("invalid old_password")
+	}
+
+	hashedNewPassword, err := hash.HashPassword(newPassword)
+	if err != nil {
+		return errors.New("failed to hash password")
+	}
+
+	if err := s.userRepo.ChangePassword(userID, hashedNewPassword); err != nil {
+		return err
+	}
+	return nil
 }

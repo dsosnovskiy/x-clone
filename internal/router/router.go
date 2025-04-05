@@ -39,6 +39,8 @@ func New(handlers *Handlers, authMiddleware func(http.Handler) http.Handler) *ch
 		r.Post("/{username}/posts/{post_id}/quote", handlers.PostHandler.QuotePost())
 
 		// USER
+		r.Patch("/settings/profile", handlers.UserHandler.ChangeProfile())
+		r.Patch("/settings/password", handlers.UserHandler.ChangePassword())
 		r.Get("/{username}", handlers.UserHandler.FindUserByUsername())
 		r.Post("/{username}/follow", handlers.UserHandler.FollowUser())
 		r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())

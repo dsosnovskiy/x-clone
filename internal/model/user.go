@@ -32,6 +32,46 @@ func (u *User) Validate() error {
 	return validate.Struct(u)
 }
 
+func ValidateChangeProfile(username, firstName, lastName, birthday, bio *string) error {
+	validate := validator.New()
+	type UserData struct {
+		Username  *string `json:"username" validate:"omitempty,min=6,max=20"`
+		FirstName *string `json:"first_name" validate:"omitempty,min=2,max=32"`
+		LastName  *string `json:"last_name" validate:"omitempty,min=2,max=32"`
+		Birthday  *string `json:"birthday" validate:"omitempty,datetime=2006-01-02"`
+		Bio       *string `json:"bio" validate:"omitempty,min=1,max=300"`
+	}
+	userData := UserData{
+		Username:  username,
+		FirstName: firstName,
+		LastName:  lastName,
+		Birthday:  birthday,
+		Bio:       bio,
+	}
+	if err := validate.Struct(userData); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ValidateChangePassword(oldPassword, newPassword, confirmPassword string) error {
+	validate := validator.New()
+	type Password struct {
+		OldPassword     string `json:"old_password" validate:"required,min=7,max=32"`
+		NewPassword     string `json:"new_password" validate:"required,min=7,max=32"`
+		ConfirmPassword string `json:"confirm_password" validate:"required,min=7,max=32"`
+	}
+	passwordData := Password{
+		OldPassword:     oldPassword,
+		NewPassword:     newPassword,
+		ConfirmPassword: confirmPassword,
+	}
+	if err := validate.Struct(passwordData); err != nil {
+		return err
+	}
+	return nil
+}
+
 type UserResponse struct {
 	UserID    int       `json:"user_id"`
 	Username  string    `json:"username"`

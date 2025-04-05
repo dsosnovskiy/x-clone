@@ -107,6 +107,76 @@ JWT_SECRET=...
 
 # 👤 User
 
+## **/settings/profile {PATCH}**
+
+**Description**: Change profile
+
+**Request Body Schema**:
+
+```json
+{
+  "username": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "birthday": "string",
+  "bio": "string"
+}
+```
+
+**Changed Fields**:
+
+| Field        | Type   | Required | Limits               | Example              |
+| ------------ | ------ | -------- | -------------------- | -------------------- |
+| `username`   | string | No       | 6-20                 | `john_doe22`         |
+| `first_name` | string | No       | 2-32                 | `John`               |
+| `last_name`  | string | No       | 2-32                 | `Doe`                |
+| `birthday`   | string | No       | Format: `YYYY-MM-DD` | `1990-05-15`         |
+| `bio`        | string | No       | 1-300                | `Software Developer` |
+
+**Response Body Schema**:
+
+```json
+{
+  "user_id": "int",
+  "username": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "birthday": "string",
+  "bio": "string",
+  "created_at": "string",
+  "followers": "int",
+  "following": "int"
+}
+```
+
+## **/settings/password {PATCH}**
+
+**Description**: Change password
+
+**Response Body Schema**:
+
+```json
+{
+  "old_password": "string",
+  "new_password": "string",
+  "confirm_password": "string"
+}
+```
+
+**Changed Fields**:
+
+| Field              | Type   | Required | Limits | Example     |
+| ------------------ | ------ | -------- | ------ | ----------- |
+| `old_password`     | string | Yes      | 7-32   | `qwerty123` |
+| `new_password`     | string | Yes      | 7-32   | `zxcvbn456` |
+| `confirm_password` | string | Yes      | 7-32   | `zxcvbn456` |
+
+**Response Body Schema**:
+
+```
+successful password change
+```
+
 ## **/{username} {GET}**
 
 **Description**: Get information about the user

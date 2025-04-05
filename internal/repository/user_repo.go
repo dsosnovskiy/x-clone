@@ -125,3 +125,39 @@ func (r *UserRepository) GetFollowingByUser(userID int) ([]model.User, error) {
 
 	return user.FollowingList, nil
 }
+
+func (r *UserRepository) ChangeProfile(userID int, username, firstName, lastName, birthday, bio *string) error {
+	if username != nil {
+		if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("username", username).Error; err != nil {
+			return err
+		}
+	}
+	if firstName != nil {
+		if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("first_name", firstName).Error; err != nil {
+			return err
+		}
+	}
+	if lastName != nil {
+		if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("last_name", lastName).Error; err != nil {
+			return err
+		}
+	}
+	if birthday != nil {
+		if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("birthday", birthday).Error; err != nil {
+			return err
+		}
+	}
+	if bio != nil {
+		if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("bio", bio).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *UserRepository) ChangePassword(userID int, hashedNewPassword string) error {
+	if err := r.db.Model(&model.User{}).Where("user_id = ?", userID).Update("password", hashedNewPassword).Error; err != nil {
+		return err
+	}
+	return nil
+}
