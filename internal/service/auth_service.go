@@ -22,32 +22,39 @@ func NewAuthService(authRepo *repository.AuthRepository, userRepo *repository.Us
 }
 
 func (s *AuthService) Register(user *model.User) (string, error) {
+	// Hash password
 	hashedPassword, err := hash.HashPassword(user.Password)
 	if err != nil {
-		return "", errors.New("failed to hash password")
+		return "", err
 	}
-
 	user.Password = hashedPassword
 
+	// Repo call
 	if err := s.authRepo.CreateUser(user); err != nil {
-		return "", errors.New("username already exists")
+		return "", errors.New("user already exists")
 	}
 
+	// Return access token
 	return s.GenerateAccessToken(user)
 }
 
 func (s *AuthService) Login(username, password string) (string, error) {
+	// Check user db
 	user, err := s.userRepo.FindUserByUsername(username)
 	if err != nil {
-		return "", errors.New("user not found")
+		return "", errors.New("invalid username")
 	}
 
+	// Check password
 	if !hash.CheckPassword(password, user.Password) {
 		return "", errors.New("invalid password")
 	}
 
+	// Return access token
 	return s.GenerateAccessToken(user)
 }
+
+// JWT
 
 func (s *AuthService) GenerateAccessToken(user *model.User) (string, error) {
 	claims := jwt.MapClaims{

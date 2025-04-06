@@ -2,20 +2,17 @@ package model
 
 import (
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type User struct {
 	UserID        int       `json:"user_id" gorm:"primaryKey;autoIncrement"`
-	Username      string    `json:"username" gorm:"unique;not null" validate:"required,min=6,max=20"`
-	Password      string    `json:"password" gorm:"not null" validate:"required,min=7,max=32"`
-	FirstName     string    `json:"first_name" gorm:"not null" validate:"required,min=2,max=32"`
-	LastName      string    `json:"last_name" gorm:"not null" validate:"required,min=2,max=32"`
-	Birthday      *string   `json:"birthday" gorm:"default:null" validate:"omitempty,datetime=2006-01-02"`
-	Bio           *string   `json:"bio" gorm:"default:null" validate:"omitempty,min=1,max=300"`
+	Username      string    `json:"username" gorm:"unique;not null"`
+	Password      string    `json:"password" gorm:"not null"`
+	FirstName     string    `json:"first_name" gorm:"not null"`
+	LastName      string    `json:"last_name" gorm:"not null"`
+	Birthday      *string   `json:"birthday" gorm:"default:null"`
+	Bio           *string   `json:"bio" gorm:"default:null"`
 	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt     time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	Followers     int       `json:"followers" gorm:"default:0"`
 	Following     int       `json:"following" gorm:"default:0"`
 	FollowersList []User    `gorm:"many2many:followers;foreignKey:UserID;joinForeignKey:FollowingID;References:UserID;joinReferences:FollowerID"`
@@ -25,51 +22,6 @@ type User struct {
 type Follower struct {
 	FollowerID  int `json:"follower_id" gorm:"primaryKey;foreignKey:FollowerID;references:UserID;constraint:OnDelete:CASCADE"`
 	FollowingID int `json:"following_id" gorm:"primaryKey;foreignKey:FollowingID;references:UserID;constraint:OnDelete:CASCADE"`
-}
-
-func (u *User) Validate() error {
-	validate := validator.New()
-	return validate.Struct(u)
-}
-
-func ValidateChangeProfile(username, firstName, lastName, birthday, bio *string) error {
-	validate := validator.New()
-	type UserData struct {
-		Username  *string `json:"username" validate:"omitempty,min=6,max=20"`
-		FirstName *string `json:"first_name" validate:"omitempty,min=2,max=32"`
-		LastName  *string `json:"last_name" validate:"omitempty,min=2,max=32"`
-		Birthday  *string `json:"birthday" validate:"omitempty,datetime=2006-01-02"`
-		Bio       *string `json:"bio" validate:"omitempty,min=1,max=300"`
-	}
-	userData := UserData{
-		Username:  username,
-		FirstName: firstName,
-		LastName:  lastName,
-		Birthday:  birthday,
-		Bio:       bio,
-	}
-	if err := validate.Struct(userData); err != nil {
-		return err
-	}
-	return nil
-}
-
-func ValidateChangePassword(oldPassword, newPassword, confirmPassword string) error {
-	validate := validator.New()
-	type Password struct {
-		OldPassword     string `json:"old_password" validate:"required,min=7,max=32"`
-		NewPassword     string `json:"new_password" validate:"required,min=7,max=32"`
-		ConfirmPassword string `json:"confirm_password" validate:"required,min=7,max=32"`
-	}
-	passwordData := Password{
-		OldPassword:     oldPassword,
-		NewPassword:     newPassword,
-		ConfirmPassword: confirmPassword,
-	}
-	if err := validate.Struct(passwordData); err != nil {
-		return err
-	}
-	return nil
 }
 
 type UserResponse struct {

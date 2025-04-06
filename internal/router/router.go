@@ -25,7 +25,16 @@ func New(handlers *Handlers, authMiddleware func(http.Handler) http.Handler) *ch
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware) // Apply middleware to all routers in the group
 
-		// POST
+		// User
+		r.Patch("/settings/profile", handlers.UserHandler.ProfileUpdate())
+		r.Patch("/settings/password", handlers.UserHandler.PasswordChange())
+		r.Get("/{username}", handlers.UserHandler.GetUserByUsername())
+		r.Post("/{username}/follow", handlers.UserHandler.FollowUser())
+		r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())
+		r.Get("/{username}/followers", handlers.UserHandler.GetFollowersByUser())
+		r.Get("/{username}/following", handlers.UserHandler.GetFollowingByUser())
+
+		// Post
 		r.Post("/compose/post", handlers.PostHandler.CreatePost())
 		r.Get("/{username}/posts", handlers.PostHandler.GetUserPosts())
 		r.Get("/{username}/posts/{post_id}", handlers.PostHandler.GetUserPostByID())
@@ -37,15 +46,6 @@ func New(handlers *Handlers, authMiddleware func(http.Handler) http.Handler) *ch
 		r.Post("/{username}/posts/{post_id}/repost", handlers.PostHandler.RepostPost())
 		r.Delete("/{username}/posts/{post_id}/repost", handlers.PostHandler.UndoRepostPost())
 		r.Post("/{username}/posts/{post_id}/quote", handlers.PostHandler.QuotePost())
-
-		// USER
-		r.Patch("/settings/profile", handlers.UserHandler.ChangeProfile())
-		r.Patch("/settings/password", handlers.UserHandler.ChangePassword())
-		r.Get("/{username}", handlers.UserHandler.FindUserByUsername())
-		r.Post("/{username}/follow", handlers.UserHandler.FollowUser())
-		r.Delete("/{username}/follow", handlers.UserHandler.StopFollowingUser())
-		r.Get("/{username}/followers", handlers.UserHandler.GetFollowersByUser())
-		r.Get("/{username}/following", handlers.UserHandler.GetFollowingByUser())
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

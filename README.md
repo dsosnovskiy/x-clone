@@ -7,13 +7,14 @@
 - **Web framework**: `net/http` (HTTP server), `chi` (HTTP router)
 - **Configuration**: `cleanenv`
 - **Logging**: `logrus`
+- **Validation**: `validator`
 - **Database**: `PostgreSQL` (using GORM)
 - **Authentication**: `JWT` (Access only)
 
 ## 🎯 Goals
 
-- **Caching**: `Redis`
 - **Secure**: `Refresh Token`
+- **Caching**: `Redis`
 - **New functionality**:
   - News feed
   - Notifications
@@ -172,8 +173,10 @@ JWT_SECRET=...
 
 **Response Body Schema**:
 
-```
-successful password change
+```json
+{
+  "message": "successfully changed password"
+}
 ```
 
 ## **/{username} {GET}**
@@ -202,8 +205,11 @@ successful password change
 
 **Response Body Schema**:
 
-```
-successful follow user: {username}
+```json
+{
+  "message": "successfully followed the user",
+  "username": "string"
+}
 ```
 
 ## **/{username}/follow {DELETE}**
@@ -212,8 +218,11 @@ successful follow user: {username}
 
 **Response Body Schema**:
 
-```
-successful stop following user: {username}
+```json
+{
+  "message": "successfully stop following the user",
+  "username": "string"
+}
 ```
 
 ## **/{username}/followers {GET}**
@@ -312,7 +321,6 @@ successful stop following user: {username}
   "likes": "int",
   "reposts": "int",
   "created_at": "string",
-  "updated_at": "string",
   "original_post_id": null,
   "original_post": null
 }
@@ -333,7 +341,6 @@ successful stop following user: {username}
     "likes": "int",
     "reposts": "int",
     "created_at": "string",
-    "updated_at": "string",
     "original_post_id": null,
     "original_post": null
   },
@@ -344,7 +351,6 @@ successful stop following user: {username}
     "likes": "int",
     "reposts": "int",
     "created_at": "string",
-    "updated_at": "string",
     "original_post_id": null,
     "original_post": null
   }
@@ -365,7 +371,6 @@ successful stop following user: {username}
   "likes": "int",
   "reposts": "int",
   "created_at": "string",
-  "updated_at": "string",
   "original_post_id": null,
   "original_post": null
 }
@@ -399,7 +404,6 @@ successful stop following user: {username}
   "likes": "int",
   "reposts": "int",
   "created_at": "string",
-  "updated_at": "string",
   "original_post_id": null,
   "original_post": null
 }
@@ -411,8 +415,10 @@ successful stop following user: {username}
 
 **Response Body Schema**:
 
-```
-successful deletion of the post
+```json
+{
+  "message": "successfully deleted the post"
+}
 ```
 
 ## **/{username}/posts/{post_id}/like {POST}**
@@ -421,8 +427,11 @@ successful deletion of the post
 
 **Response Body Schema**:
 
-```
-successful liking of the post: {post_id}
+```json
+{
+  "message": "successfully liked the post",
+  "post_id": "int"
+}
 ```
 
 ## **/{username}/posts/{post_id}/like {DELETE}**
@@ -431,8 +440,11 @@ successful liking of the post: {post_id}
 
 **Response Body Schema**:
 
-```
-successful unliking of the post: {post_id}
+```json
+{
+  "message": "successfully unliked the post",
+  "post_id": "int"
+}
 ```
 
 ## **/{username}/reposts {GET}**
@@ -450,7 +462,6 @@ successful unliking of the post: {post_id}
     "likes": "int",
     "reposts": "int",
     "created_at": "string",
-    "updated_at": "string",
     "original_post_id": null,
     "original_post": null
   },
@@ -461,7 +472,6 @@ successful unliking of the post: {post_id}
     "likes": "int",
     "reposts": "int",
     "created_at": "string",
-    "updated_at": "string",
     "original_post_id": null,
     "original_post": null
   }
@@ -474,8 +484,11 @@ successful unliking of the post: {post_id}
 
 **Response Body Schema**:
 
-```
-successful repost of the post: {post_id}
+```json
+{
+  "message": "successfully reposted the post",
+  "post_id": "int"
+}
 ```
 
 ## **/{username}/posts/{post_id}/repost {DELETE}**
@@ -484,8 +497,11 @@ successful repost of the post: {post_id}
 
 **Response Body Schema**:
 
-```
-successful undo repost of the post: {post_id}
+```json
+{
+  "message": "successfully cancelled repost the post",
+  "post_id": "int"
+}
 ```
 
 ## **/{username}/posts/{post_id}/quote {POST}**
@@ -514,7 +530,6 @@ successful undo repost of the post: {post_id}
   "likes": "int",
   "reposts": "int",
   "created_at": "string",
-  "updated_at": "string",
   "original_post_id": "int",
   "original_post": {
     "post_id": "int",
@@ -523,7 +538,6 @@ successful undo repost of the post: {post_id}
     "likes": "int",
     "reposts": "int",
     "created_at": "string",
-    "updated_at": "string",
     "original_post_id": null,
     "original_post": null
   }

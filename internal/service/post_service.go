@@ -17,28 +17,18 @@ func NewPostService(postRepo *repository.PostRepository, userRepo *repository.Us
 	return &PostService{postRepo: postRepo, userRepo: userRepo}
 }
 
-func (s *PostService) CreatePost(post *model.Post, userID int) error {
-	user, err := s.userRepo.GetUserByID(userID)
+func (s *PostService) CreatePost(post *model.Post) (*model.Post, error) {
+	newPost, err := s.postRepo.CreatePost(post)
 	if err != nil {
-		return err
+		return nil, errors.New("failed to create post")
 	}
-
-	post.UserID = user.UserID
-
-	if err := s.postRepo.CreatePost(post); err != nil {
-		return errors.New("failed to create post")
-	}
-	return nil
+	return newPost, nil
 }
 
 func (s *PostService) GetUserPosts(userID int) (*[]model.Post, error) {
 	posts, err := s.postRepo.GetUserPosts(userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.New("posts not found")
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	return posts, nil
 }
@@ -55,15 +45,16 @@ func (s *PostService) GetUserPostByID(userID, postID int) (*model.Post, error) {
 	return post, nil
 }
 
-func (s *PostService) UpdatePostContentByID(userID, postID int, content string) error {
-	if err := s.postRepo.UpdatePostContentByID(userID, postID, content); err != nil {
+func (s *PostService) UpdatePostContentByID(userID, postID int, content string) (*model.Post, error) {
+	updatedPost, err := s.postRepo.UpdatePostContentByID(userID, postID, content)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.New("post not found")
+			return nil, errors.New("post not found")
 		} else {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return updatedPost, err
 }
 
 func (s *PostService) DeletePostByID(userID, postID int) error {
@@ -124,11 +115,7 @@ func (s *PostService) UndoRepostPost(userID, postID int) error {
 func (s *PostService) GetUserReposts(userID int) (*[]model.Post, error) {
 	reposts, err := s.postRepo.GetUserReposts(userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.New("reposts not found")
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	return reposts, nil
 }

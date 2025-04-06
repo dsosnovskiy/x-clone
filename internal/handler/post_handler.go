@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"x-clone/internal/model"
 	"x-clone/internal/service"
+	"x-clone/internal/validator"
 	"x-clone/pkg/middleware"
 
 	"github.com/go-chi/chi/v5"
@@ -22,55 +23,64 @@ func NewPostHandler(postService *service.PostService, userService *service.UserS
 
 func (h *PostHandler) CreatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		user, err := h.userService.GetUserByID(userID)
+
+		// Req parsing
+		var req validator.ContentRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+
+		// Validation
+		if err := validator.Validate(req); err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+
+		// To model
+		post := model.Post{
+			UserID:  userID,
+			Content: req.Content,
+		}
+
+		// Service call
+		newPost, err := h.postService.CreatePost(&post)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		var post model.Post
-		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
-
-		if err := post.Validate(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		if err := h.postService.CreatePost(&post, user.UserID); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(post)
+		json.NewEncoder(w).Encode(newPost)
 	}
 }
 
 func (h *PostHandler) GetUserPosts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// URL parsing
 		username := chi.URLParam(r, "username")
 
-		user, err := h.userService.FindUserByUsername(username)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
 		posts, err := h.postService.GetUserPosts(user.UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(posts)
@@ -79,26 +89,27 @@ func (h *PostHandler) GetUserPosts() http.HandlerFunc {
 
 func (h *PostHandler) GetUserPostByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// URL parsing
 		username := chi.URLParam(r, "username")
-
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		user, err := h.userService.FindUserByUsername(username)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
 		post, err := h.postService.GetUserPostByID(user.UserID, postID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(post)
@@ -107,66 +118,56 @@ func (h *PostHandler) GetUserPostByID() http.HandlerFunc {
 
 func (h *PostHandler) UpdatePostContentByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		user, err := h.userService.GetUserByID(userID)
+
+		// URL parsing
+		username := chi.URLParam(r, "username")
+		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
+		if err != nil {
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
+			return
+		}
+
+		// Req parsing
+		var req validator.ContentRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+
+		// Validation
+		if err := validator.Validate(req); err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		usernameOwner := chi.URLParam(r, "username")
-		userOwner, err := h.userService.FindUserByUsername(usernameOwner)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		if usernameOwner != user.Username {
+		if user.UserID != userID {
 			http.Error(w, "you are not owner of this post", http.StatusForbidden)
 			return
 		}
-
-		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
-		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
-			return
-		}
-
-		post, err := h.postService.GetUserPostByID(userOwner.UserID, postID)
+		post, err := h.postService.GetUserPostByID(userID, postID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		var content struct {
-			Content string `json:"content"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&content); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
-
-		if err := model.ValidateContent(content.Content); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := h.postService.UpdatePostContentByID(userOwner.UserID, post.PostID, content.Content); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		updatedPost, err := h.postService.GetUserPostByID(userOwner.UserID, post.PostID)
+		updatedPost, err := h.postService.UpdatePostContentByID(userID, post.PostID, req.Content)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(updatedPost)
@@ -175,235 +176,239 @@ func (h *PostHandler) UpdatePostContentByID() http.HandlerFunc {
 
 func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		user, err := h.userService.GetUserByID(userID)
+
+		// URL parsing
+		username := chi.URLParam(r, "username")
+		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
+		if err != nil {
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
+			return
+		}
+
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		usernameOwner := chi.URLParam(r, "username")
-		userOwner, err := h.userService.FindUserByUsername(usernameOwner)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		if usernameOwner != user.Username {
+		if user.UserID != userID {
 			http.Error(w, "you are not owner of this post", http.StatusForbidden)
 			return
 		}
-
-		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
-		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
-			return
-		}
-
-		post, err := h.postService.GetUserPostByID(userOwner.UserID, postID)
+		post, err := h.postService.GetUserPostByID(userID, postID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		if err := h.postService.DeletePostByID(userOwner.UserID, post.PostID); err != nil {
+		if err := h.postService.DeletePostByID(userID, post.PostID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful deletion of the post"))
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "successfully deleted the post",
+		})
 	}
 }
 
 func (h *PostHandler) LikePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userWhoLiked, err := h.userService.GetUserByID(userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		usernameWhosePost := chi.URLParam(r, "username")
-		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
+		// URL parsing
+		username := chi.URLParam(r, "username")
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, postID)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		if err := h.postService.LikePost(userWhoLiked.UserID, post.PostID); err != nil {
+		post, err := h.postService.GetUserPostByID(user.UserID, postID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if err := h.postService.LikePost(userID, post.PostID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful liking of the post: " + chi.URLParam(r, "post_id")))
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "successfully liked the post",
+			"post_id": postID,
+		})
 	}
 }
 
 func (h *PostHandler) UnlikePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userWhoLiked, err := h.userService.GetUserByID(userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		usernameWhosePost := chi.URLParam(r, "username")
-		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
+		// URL parsing
+		username := chi.URLParam(r, "username")
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, postID)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		if err := h.postService.UnlikePost(userWhoLiked.UserID, post.PostID); err != nil {
+		post, err := h.postService.GetUserPostByID(user.UserID, postID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if err := h.postService.UnlikePost(userID, post.PostID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful unliking of the post: " + chi.URLParam(r, "post_id")))
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "successfully unliked the post",
+			"post_id": postID,
+		})
 	}
 }
 
 func (h *PostHandler) RepostPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userWhoReposted, err := h.userService.GetUserByID(userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		usernameWhosePost := chi.URLParam(r, "username")
-		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
+		// URL parsing
+		username := chi.URLParam(r, "username")
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, postID)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		if err := h.postService.RepostPost(userWhoReposted.UserID, post.PostID); err != nil {
+		post, err := h.postService.GetUserPostByID(user.UserID, postID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if err := h.postService.RepostPost(userID, post.PostID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful repost of the post: " + chi.URLParam(r, "post_id")))
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "successfully reposted the post",
+			"post_id": postID,
+		})
 	}
 }
 
 func (h *PostHandler) UndoRepostPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userWhoReposted, err := h.userService.GetUserByID(userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		usernameWhosePost := chi.URLParam(r, "username")
-		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
+		// URL parsing
+		username := chi.URLParam(r, "username")
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		post, err := h.postService.GetUserPostByID(userWhosePost.UserID, postID)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
-		if err := h.postService.UndoRepostPost(userWhoReposted.UserID, post.PostID); err != nil {
+		post, err := h.postService.GetUserPostByID(user.UserID, postID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if err := h.postService.UndoRepostPost(userID, post.PostID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("successful undo repost of the post: " + chi.URLParam(r, "post_id")))
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "successfully cancelled repost of the post",
+			"post_id": postID,
+		})
 	}
 }
 
 func (h *PostHandler) GetUserReposts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// URL parsing
 		username := chi.URLParam(r, "username")
 
-		user, err := h.userService.FindUserByUsername(username)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-
 		posts, err := h.postService.GetUserReposts(user.UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(posts)
@@ -412,54 +417,54 @@ func (h *PostHandler) GetUserReposts() http.HandlerFunc {
 
 func (h *PostHandler) QuotePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Authentication
 		userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userWhoQuoted, err := h.userService.GetUserByID(userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		usernameWhosePost := chi.URLParam(r, "username")
-		userWhosePost, err := h.userService.FindUserByUsername(usernameWhosePost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
+		// URL parsing
+		username := chi.URLParam(r, "username")
 		postID, err := strconv.Atoi(chi.URLParam(r, "post_id"))
 		if err != nil {
-			http.Error(w, "Invalid PostID", http.StatusBadRequest)
+			http.Error(w, "invalid post_id", http.StatusBadRequest)
 			return
 		}
 
-		var request struct {
-			Content string `json:"content"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		// Req parsing
+		var req validator.ContentRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
 			return
 		}
 
-		if err := model.ValidateContent(request.Content); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		// Validation
+		if err := validator.Validate(req); err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}
 
-		originalPost, err := h.postService.GetUserPostByID(userWhosePost.UserID, postID)
+		// Service call
+		user, err := h.userService.GetUserByUsername(username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		quotePost, err := h.postService.QuotePost(userWhoQuoted.UserID, originalPost.PostID, request.Content)
+		originalPost, err := h.postService.GetUserPostByID(user.UserID, postID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		quotePost, err := h.postService.QuotePost(userID, originalPost.PostID, req.Content)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(quotePost)
 	}
 }

@@ -15,11 +15,11 @@ func NewPostRepository(db *gorm.DB) *PostRepository {
 	return &PostRepository{db: db}
 }
 
-func (r *PostRepository) CreatePost(post *model.Post) error {
+func (r *PostRepository) CreatePost(post *model.Post) (*model.Post, error) {
 	if err := r.db.Create(post).Error; err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return post, nil
 }
 
 func (r *PostRepository) GetUserPosts(userID int) (*[]model.Post, error) {
@@ -42,11 +42,22 @@ func (r *PostRepository) GetUserPostByID(userID, postID int) (*model.Post, error
 	return &post, nil
 }
 
-func (r *PostRepository) UpdatePostContentByID(userID, postID int, content string) error {
-	if err := r.db.Model(&model.Post{}).Where("user_id = ? AND post_id = ?", userID, postID).Update("content", content).Error; err != nil {
-		return err
+func (r *PostRepository) UpdatePostContentByID(userID, postID int, content string) (*model.Post, error) {
+	var post model.Post
+
+	if err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Post{}).
+			Where("user_id = ? AND post_id = ?", userID, postID).
+			Update("content", content).
+			First(&post).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
-	return nil
+
+	return &post, nil
 }
 
 func (r *PostRepository) DeletePostByID(userID, postID int) error {
@@ -90,7 +101,7 @@ func (r *PostRepository) LikePost(userID, postID int) error {
 				return err
 			}
 		} else {
-			return errors.New("you've already liked this post")
+			return errors.New("you have already liked this post")
 		}
 
 		// CreateLike
@@ -117,7 +128,7 @@ func (r *PostRepository) UnlikePost(userID, postID int) error {
 		var existingLike model.Like
 		if err := tx.Where("user_id = ? AND liked_post_id = ?", userID, postID).First(&existingLike).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				return errors.New("you already don't like this post")
+				return errors.New("you have already unliked this post")
 			}
 			return err
 		}
@@ -145,7 +156,7 @@ func (r *PostRepository) RepostPost(userID, postID int) error {
 				return err
 			}
 		} else {
-			return errors.New("you've already reposted this post")
+			return errors.New("you have already reposted this post")
 		}
 
 		// CreateRepost
@@ -172,7 +183,7 @@ func (r *PostRepository) UndoRepostPost(userID, postID int) error {
 		var existingRepost model.Repost
 		if err := tx.Where("user_id = ? AND reposted_post_id = ?", userID, postID).First(&existingRepost).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				return errors.New("you haven't reposted this post")
+				return errors.New("you have already cancelled repost this post")
 			}
 			return err
 		}

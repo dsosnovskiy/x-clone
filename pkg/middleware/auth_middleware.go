@@ -18,14 +18,14 @@ func AuthMiddleware(authService *service.AuthService) func(http.Handler) http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Authorization header required", http.StatusUnauthorized)
+				http.Error(w, "you are not authorised", http.StatusUnauthorized)
 				return
 			}
 
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 			claims, err := authService.ValidateAccessToken(tokenString)
 			if err != nil {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return
 			}
 

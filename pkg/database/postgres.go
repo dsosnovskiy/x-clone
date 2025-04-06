@@ -21,7 +21,7 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+		log.Fatalf("failed to connect to the database")
 	}
 
 	err = db.AutoMigrate(
@@ -32,7 +32,7 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.Like{},
 	)
 	if err != nil {
-		log.Fatalf("Failed to apply migrations: %v", err)
+		log.Fatalf("failed to apply migrations")
 		return nil, err
 	}
 

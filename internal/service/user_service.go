@@ -15,16 +15,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
-func (s *UserService) GetUserByID(userID int) (*model.UserResponse, error) {
-	user, err := s.userRepo.GetUserByID(userID)
-	if err != nil {
-		return nil, errors.New("user not found")
-	}
-	userResponse := user.ToResponse()
-	return &userResponse, nil
-}
-
-func (s *UserService) FindUserByUsername(username string) (*model.UserResponse, error) {
+func (s *UserService) GetUserByUsername(username string) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindUserByUsername(username)
 	if err != nil {
 		return nil, errors.New("user not found")
@@ -35,22 +26,16 @@ func (s *UserService) FindUserByUsername(username string) (*model.UserResponse, 
 
 func (s *UserService) FollowUser(followerID, followingID int) error {
 	if followerID == followingID {
-		return errors.New("you cannot follow or stop following yourself")
+		return errors.New("you cannot follow yourself")
 	}
-	if err := s.userRepo.FollowUser(followerID, followingID); err != nil {
-		return err
-	}
-	return nil
+	return s.userRepo.FollowUser(followerID, followingID)
 }
 
 func (s *UserService) StopFollowingUser(followerID, followingID int) error {
 	if followerID == followingID {
-		return errors.New("you cannot follow or stop following yourself")
+		return errors.New("you cannot stop following yourself")
 	}
-	if err := s.userRepo.StopFollowingUser(followerID, followingID); err != nil {
-		return err
-	}
-	return nil
+	return s.userRepo.StopFollowingUser(followerID, followingID)
 }
 
 func (s *UserService) GetFollowersByUser(userID int) ([]model.UserResponse, error) {
@@ -81,35 +66,27 @@ func (s *UserService) GetFollowingByUser(userID int) ([]model.UserResponse, erro
 	return userResponses, nil
 }
 
-func (s *UserService) ChangeProfile(userID int, username, firstName, lastName, birthday, bio *string) error {
-	if err := s.userRepo.ChangeProfile(userID, username, firstName, lastName, birthday, bio); err != nil {
-		return err
+func (s *UserService) ProfileUpdate(userID int, updates map[string]interface{}) (*model.User, error) {
+	user, err := s.userRepo.ProfileUpdate(userID, updates)
+	if err != nil {
+		return nil, errors.New("failed to update profile")
 	}
-	return nil
+	return user, nil
 }
 
-func (s *UserService) ChangePassword(userID int, oldPassword, newPassword, confirmPassword string) error {
-	if oldPassword == newPassword {
-		return errors.New("the new password cannot be equal to the old password")
-	}
-	if newPassword != confirmPassword {
-		return errors.New("failed password confirmation")
-	}
+func (s *UserService) PasswordChange(userID int, oldPassword, newPassword string) error {
 	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
 		return err
 	}
+
 	if !hash.CheckPassword(oldPassword, user.Password) {
 		return errors.New("invalid old_password")
 	}
-
 	hashedNewPassword, err := hash.HashPassword(newPassword)
 	if err != nil {
-		return errors.New("failed to hash password")
-	}
-
-	if err := s.userRepo.ChangePassword(userID, hashedNewPassword); err != nil {
 		return err
 	}
-	return nil
+
+	return s.userRepo.PasswordChange(user.UserID, hashedNewPassword)
 }
