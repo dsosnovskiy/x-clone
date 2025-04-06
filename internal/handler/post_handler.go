@@ -211,6 +211,7 @@ func (h *PostHandler) DeletePostByID() http.HandlerFunc {
 			return
 		}
 
+		// Response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
